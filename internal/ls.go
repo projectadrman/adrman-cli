@@ -18,6 +18,9 @@ package internal
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"regexp"
 
 	"github.com/spf13/cobra"
 )
@@ -29,7 +32,17 @@ var listCmd = &cobra.Command{
 	Short:   "List ADRs.",
 	Long:    "List Any (Architectural) Decision Records (ADRs).",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		fmt.Println("ADRs:")
+		files, err := os.ReadDir(".")
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, file := range files {
+			filename := file.Name()
+			if res, _ := regexp.MatchString("\\d{4}-.+\\.md", filename); res {
+				fmt.Println(filename)
+			}
+		}
 	},
 }
 
