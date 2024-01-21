@@ -57,8 +57,7 @@ func FirstRecordName() string {
 }
 
 func FirstRecordContent() string {
-	return `
-# 1. Record architecture decisions
+	return `# 1. Record architecture decisions
 
 Date: {{date}}
 
