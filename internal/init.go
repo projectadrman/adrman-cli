@@ -76,6 +76,8 @@ By default is docs/adr`,
 			tmpFile := filepath.Join(targetDirPath, ".adrtemplate.md")
 			err = CreateTemplateFile(tmpFile)
 			cobra.CheckErr(err)
+			err = CreateFirstRecord(targetDirPath)
+			cobra.CheckErr(err)
 		},
 	}
 )
