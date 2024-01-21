@@ -24,12 +24,8 @@ import (
 )
 
 type Config struct {
-	Version  string   `yaml:"version"`
-	Template Template `yaml:"template"`
-}
-
-type Template struct {
-	Path string `yaml:"path"`
+	Version      string `yaml:"version"`
+	TemplatePath string `yaml:"template-path"`
 }
 
 func CreateConfigFile(path string) error {
@@ -63,9 +59,7 @@ func CreateConfigFile(path string) error {
 
 func DefaultConfig() Config {
 	return Config{
-		Version: "0.1.0",
-		Template: Template{
-			Path: ".adrtemplate.md",
-		},
+		Version:      "0.1.0",
+		TemplatePath: ".adrtemplate.md",
 	}
 }
