@@ -17,65 +17,79 @@
 package internal
 
 import (
-	"io"
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
+	"text/template"
+	"unicode"
 )
 
-func CreateFirstRecord(path string) error {
-	// Create parent dirs
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		err := os.MkdirAll(path, os.ModePerm)
+type Record struct {
+	Serial int
+	Title  string
+	Fields map[string]string
+}
+
+func createFirstRecordFile(dirPath string, templatePath string) error {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(dirPath, 0755)
 		if err != nil {
 			return err
 		}
 	}
-	// Create template
-	filename := filepath.Join(path, FirstRecordName())
-	// Create template file
-	recordFile, err := os.Create(filename)
+	templateTool, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return err
 	}
-	// Creat content
-	content := FirstRecordContent()
-	now := time.Now()
-	date := now.Format(time.DateOnly)
-	total := strings.Replace(content, "{{date}}", date, 1)
-	// Write template to file
-	_, err = io.WriteString(recordFile, total)
+	record := createFirstRecord()
+	//record.Fields["Date"] = time.Now().Format(time.DateOnly)
+	recordPath := filepath.Join(dirPath, createRecordFilename(record))
+	recordFile, err := os.Create(recordPath)
+	if err != nil {
+		return err
+	}
+	err = templateTool.Execute(recordFile, record.Fields)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func FirstRecordName() string {
-	return "0001-record-architecture-decisions.md"
+func createFirstRecord() Record {
+	return Record{
+		Serial: 0,
+		Title:  "Record architecture decisions",
+		Fields: map[string]string{
+			"Date":    "foo",
+			"Satus":   "Accepted",
+			"Context": "We need to record the architectural decisions made on this project.",
+			"Decision": `We will use Architecture Decision Records,
+as described by Michael Nygard in this article:
+https://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions`,
+			"Consequences": "See Michael Nygard's article, linked above.",
+		},
+	}
 }
 
-func FirstRecordContent() string {
-	return `# 1. Record architecture decisions
+func createRecordFilename(record Record) string {
+	numberStr := fmt.Sprintf("%04d", record.Serial)
+	kebabTitle := toKebabCase(record.Title)
+	return fmt.Sprintf("%s-%s.md", numberStr, kebabTitle)
+}
 
-Date: {{date}}
-
-## Status
-
-Accepted
-
-## Context
-
-We need to record the architectural decisions made on this project.
-
-## Decision
-
-We will use Architecture Decision Records,
-as described by Michael Nygard in this article:
-https://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions
-
-## Consequences
-
-See Michael Nygard's article, linked above.`
+func toKebabCase(input string) string {
+	var result []rune
+	for i, r := range input {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				result = append(result, '-')
+			}
+			result = append(result, unicode.ToLower(r))
+		} else if r == ' ' || r == '_' || r == '-' {
+			result = append(result, '-')
+		} else {
+			result = append(result, r)
+		}
+	}
+	return string(result)
 }

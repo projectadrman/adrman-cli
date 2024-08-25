@@ -24,42 +24,73 @@ import (
 )
 
 type Config struct {
-	Version      string `yaml:"version"`
-	TemplatePath string `yaml:"template-path"`
+	Version string `yaml:"version"`
 }
 
-func CreateConfigFile(path string) error {
-	// Create parent dirs
-	dirPath := filepath.Dir(path)
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		err := os.MkdirAll(dirPath, os.ModePerm)
+type GlobalConfig struct {
+	Config `yaml:",inline"`
+}
+
+type LocalConfig struct {
+	Config         `yaml:",inline"`
+	TemplateConfig `yaml:"template"`
+	RecordConfig   `yaml:"record"`
+}
+
+type TemplateConfig struct {
+	Path string `yaml:"path"`
+}
+
+type RecordConfig struct {
+	Fields map[string]RecordField `yaml:"fields"`
+}
+
+type RecordField struct {
+	Default string `yaml:"default"`
+}
+
+func createDefaultGlobalConfig() GlobalConfig {
+	return GlobalConfig{
+		Config: Config{
+			Version: "0.1.0",
+		},
+	}
+}
+
+func createDefaultLocalConfig(templateConfig TemplateConfig, recordConfig RecordConfig) LocalConfig {
+	return LocalConfig{
+		Config: Config{
+			Version: "0.1.0",
+		},
+		TemplateConfig: templateConfig,
+		RecordConfig:   recordConfig,
+	}
+}
+
+func createDefaultLocalConfigFile(configPath string) error {
+	adrDirPath := filepath.Dir(configPath)
+	if _, err := os.Stat(adrDirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(adrDirPath, 0755)
 		if err != nil {
 			return err
 		}
 	}
-	// Create config
-	config := DefaultConfig()
-	// Create yaml from config
-	cfgYaml, err := yaml.Marshal(&config)
+	templateConfig := TemplateConfig{Path: ".adrtemplate.md"}
+	recordConfig := RecordConfig{Fields: map[string]RecordField{
+		"Date": {Default: "now"},
+	}}
+	localConfig := createDefaultLocalConfig(templateConfig, recordConfig)
+	configContent, err := yaml.Marshal(&localConfig)
 	if err != nil {
 		return err
 	}
-	// Create yaml file
-	yamlFile, err := os.Create(path)
+	yamlFile, err := os.Create(configPath)
 	if err != nil {
 		return err
 	}
-	// Write yaml to file
-	_, err = io.WriteString(yamlFile, string(cfgYaml))
+	_, err = io.WriteString(yamlFile, string(configContent))
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func DefaultConfig() Config {
-	return Config{
-		Version:      "0.1.0",
-		TemplatePath: ".adrtemplate.md",
-	}
 }

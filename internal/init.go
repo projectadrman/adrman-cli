@@ -27,14 +27,12 @@ import (
 var (
 	dirFlagName = "directory"
 	initCmd     = &cobra.Command{
-		Use:        "init",
-		Aliases:    []string{"initialize", "initialise"},
-		SuggestFor: []string{"create", "start"},
+		Use: "init",
 		Example: `  adr init
   adr init -d relative/path/to/docs/adr
   adr init -d ~/absolute/path/to/docs/adr`,
-		Short: "Initialize an ADRs directory.",
-		Long: `Initialize an Any (Architectural) Decision Records (ADRs) directory:
+		Short: "Init an ADRs directory",
+		Long: `Init Any (Architectural) Decision Records (ADRs) directory:
 By default is docs/adr`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
@@ -43,46 +41,53 @@ By default is docs/adr`,
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			currentDirPath := getCurrentDirPath()
-			fmt.Println("Current directory path: " + currentDirPath)
-			argDirPath := cmd.Flag(dirFlagName).Value.String()
-			fmt.Println("Directory path by argument: " + argDirPath)
-			var targetDirPath string
-			if argDirPath != "" {
-				switch {
-				case filepath.IsAbs(argDirPath):
-					targetDirPath = argDirPath
-				default:
-					targetDirPath = filepath.Join(currentDirPath, argDirPath)
-				}
-			} else {
-				switch {
-				case strings.HasSuffix(currentDirPath, "adr"):
-					targetDirPath = currentDirPath
-				case strings.HasSuffix(currentDirPath, "docs"):
-					targetDirPath = filepath.Join(currentDirPath, "adr")
-				default:
-					targetDirPath = filepath.Join(currentDirPath, "docs", "adr")
-				}
-			}
-			fmt.Println("Target directory path: " + targetDirPath)
-			if _, err := os.Stat(targetDirPath); os.IsNotExist(err) {
-				err := os.MkdirAll(targetDirPath, os.ModePerm)
-				cobra.CheckErr(err)
-			}
-			cfgFile = filepath.Join(targetDirPath, ".adrman.yml")
-			err := CreateConfigFile(cfgFile)
-			cobra.CheckErr(err)
-			tmpFile := filepath.Join(targetDirPath, ".adrtemplate.md")
-			err = CreateTemplateFile(tmpFile)
-			cobra.CheckErr(err)
-			err = CreateFirstRecord(targetDirPath)
-			cobra.CheckErr(err)
+			dirPath := cmd.Flag(dirFlagName).Value.String()
+			initADRsDirectory(dirPath)
 		},
 	}
 )
 
-func getCurrentDirPath() string {
+func initADRsDirectory(dirPath string) {
+	adrDirPath := getADRsDirectory(dirPath)
+	fmt.Println("Target directory path: " + adrDirPath)
+	if _, err := os.Stat(adrDirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(adrDirPath, 0755) // only user can write
+		cobra.CheckErr(err)
+	}
+	configPath = filepath.Join(adrDirPath, ".adrconfig.yml")
+	err := createDefaultLocalConfigFile(configPath)
+	cobra.CheckErr(err)
+	templatePath := filepath.Join(adrDirPath, ".adrtemplate.md")
+	err = createDefaultTemplateFile(templatePath)
+	cobra.CheckErr(err)
+	err = createFirstRecordFile(adrDirPath, templatePath)
+	cobra.CheckErr(err)
+}
+
+func getADRsDirectory(dirPath string) string {
+	currDirPath := getCurrentDirectory()
+	fmt.Println("Current directory path: " + currDirPath)
+	if dirPath != "" {
+		fmt.Println("Directory path: " + dirPath)
+		switch {
+		case filepath.IsAbs(dirPath):
+			return dirPath
+		default:
+			return filepath.Join(currDirPath, dirPath)
+		}
+	} else {
+		switch {
+		case strings.HasSuffix(currDirPath, "adr"):
+			return currDirPath
+		case strings.HasSuffix(currDirPath, "docs"):
+			return filepath.Join(currDirPath, "adr")
+		default:
+			return filepath.Join(currDirPath, "docs", "adr")
+		}
+	}
+}
+
+func getCurrentDirectory() string {
 	dir, err := os.Getwd()
 	cobra.CheckErr(err)
 	return filepath.ToSlash(dir)

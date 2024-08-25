@@ -22,48 +22,44 @@ import (
 	"path/filepath"
 )
 
-func CreateTemplateFile(path string) error {
-	// Create parent dirs
-	dirPath := filepath.Dir(path)
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		err := os.MkdirAll(dirPath, os.ModePerm)
+func createDefaultTemplateFile(templatePath string) error {
+	adrDirPath := filepath.Dir(templatePath)
+	if _, err := os.Stat(adrDirPath); os.IsNotExist(err) {
+		err := os.MkdirAll(adrDirPath, 0755)
 		if err != nil {
 			return err
 		}
 	}
-	// Create template
-	template := DefaultTemplate()
-	// Create template file
-	tmpFile, err := os.Create(path)
+	templateContent := createDefaultTemplateContent()
+	templateFile, err := os.Create(templatePath)
 	if err != nil {
 		return err
 	}
-	// Write template to file
-	_, err = io.WriteString(tmpFile, template)
+	_, err = io.WriteString(templateFile, templateContent)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func DefaultTemplate() string {
-	return `# {{name}}
+func createDefaultTemplateContent() string {
+	return `# {{.Serial}}. {{.Title}}
 
-Date: {{date}}
+Date: {{.Date}}
 
 ## Status
 
-Your status...
+{{.Status}}
 
 ## Context
 
-Your context...
+{{.Context}}
 
 ## Decision
 
-Your decision...
+{{.Decision}}
 
 ## Consequences
 
-Your consequences...`
+{{.Consequences}}`
 }

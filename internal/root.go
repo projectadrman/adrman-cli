@@ -25,13 +25,13 @@ import (
 )
 
 var (
-	cfgFile string
-	rootCmd = &cobra.Command{
+	configPath string
+	rootCmd    = &cobra.Command{
 		Use:     "adr",
 		Version: "0.1.0",
 		Short:   "ADRMAN CLI",
 		Long: `ADRMAN CLI
-is a CLI tool for managing Any (Architectural) Decision Records (ADRs).`,
+is a CLI tool for managing Any (Architectural) Decision Records (ADRs)`,
 	}
 )
 
@@ -41,31 +41,25 @@ func Execute() {
 }
 
 func init() {
-	//cobra.OnInitialize(initConfig)
-
-	//rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.adrman.yml)")
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "path to config file (default is $HOME/.adrman.yml)")
+	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
-	fmt.Println("Init config")
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+	fmt.Println("Init config...")
+	if configPath != "" {
+		viper.SetConfigFile(configPath)
 	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
+		homeDir, err := os.UserHomeDir()
 		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".adrman" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yml")
+		viper.AddConfigPath(homeDir)
 		viper.SetConfigName(".adrman")
+		viper.SetConfigType("yml")
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
+	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		fmt.Println("No config file")
 	}
 }
